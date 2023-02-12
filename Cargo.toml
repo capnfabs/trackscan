@@ -2,6 +2,7 @@
 name = "discogs2"
 version = "0.1.0"
 edition = "2021"
+default-run = "main"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -9,3 +10,11 @@ edition = "2021"
 serde = {version = "1.0.152", features = ["derive"]}
 quick-xml = {version = "0.27.1", features = ["serialize"]}
 flate2 = "1.0.25"
+
+[[bin]]
+name = "main"
+path = "src/main.rs"
+
+[[bin]]
+name = "dataprinter"
+path = "src/dataprinter.rs"

@@ -8,6 +8,7 @@ use std::collections::HashMap;
 use std::env;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use data::stats::{CatCount,TitleType};
 
 fn main() -> std::io::Result<()> {
     println!("Hello, world!");
@@ -60,7 +61,10 @@ fn main() -> std::io::Result<()> {
 
     println!("checked {} records", count);
 
-    println!("Stats: {:#?}", stats);
+    let mut data: Vec<(&String, &CatCount)> = stats.iter().collect();
+    data.sort_by_key(|obj| obj.0);
+
+    println!("Stats: {:#?}", data);
 
     Result::Ok(())
 }
@@ -117,33 +121,6 @@ fn categorize_track(track: &Track) -> TitleType {
         (true, false) => TitleType::LowercaseOnly,
         (false, true) => TitleType::UppercaseOnly,
         (false, false) => TitleType::SomethingElse,
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-enum TitleType {
-    MixedCase = 0,
-    UppercaseOnly,
-    LowercaseOnly,
-    SomethingElse,
-}
-
-#[derive(Debug)]
-struct CatCount {
-    counts: Vec<u64>,
-    total: u64,
-}
-
-impl CatCount {
-    fn new() -> CatCount {
-        CatCount{
-            counts: vec![0; 4],
-            total: 0,
-        }
-    }
-    fn increment(&mut self, cat: TitleType) {
-        self.counts[cat as usize]+= 1;
-        self.total += 1;
     }
 }
 
@@ -227,9 +204,10 @@ enum DataQuality {
 
 impl DataQuality {
     fn is_acceptable(&self) -> bool {
-        match &self {
-            Self::Correct | Self::CompleteAndCorrect => true,
-            _ => false,
-        }
+        // match &self {
+        //     Self::Correct | Self::CompleteAndCorrect => true,
+        //     _ => false,
+        // }
+        *self != DataQuality::EntirelyIncorrect
     }
 }
