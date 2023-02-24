@@ -1,3 +1,6 @@
+mod data;
+
+use data::stats::{CatCount, TitleType};
 use flate2::bufread::GzDecoder;
 use quick_xml::de::Deserializer;
 use quick_xml::events::{BytesStart, Event};
@@ -8,7 +11,6 @@ use std::collections::HashMap;
 use std::env;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use data::stats::{CatCount,TitleType};
 
 fn main() -> std::io::Result<()> {
     println!("Hello, world!");
@@ -24,38 +26,40 @@ fn main() -> std::io::Result<()> {
     let mut count = 0;
     let mut stats = HashMap::new();
 
-    // The `Reader` does not implement `Iterator` because it outputs borrowed data (`Cow`s)
     loop {
-        // NOTE: this is the generic case when we don't know about the input BufRead.
-        // when the input is a &str or a &[u8], we don't actually need to use another
-        // buffer, we could directly call `reader.read_event()`
         match reader.read_event_into(&mut buf) {
-            Err(e) => panic!("Error at position {}: {:?}", reader.buffer_position(), e),
-            // exits the loop when reaching end of file
+            Err(e) => panic!(
+                "Error at position {}: {:?}",
+                reader.buffer_position(),
+                e
+            ),
             Ok(Event::Eof) => break,
-
             Ok(Event::Start(e)) => {
                 match e.name().as_ref() {
                     b"release" => {
-                        let release_bytes =
-                            read_to_end_into_buffer(&mut reader, &e, &mut junk_buf).unwrap();
-                        let str = std::str::from_utf8(&release_bytes).unwrap();
+                        let release_bytes = read_to_end_into_buffer(
+                            &mut reader,
+                            &e,
+                            &mut junk_buf
+                        ).unwrap();
+                        let str = std::str::from_utf8(&release_bytes)
+                            .unwrap();
                         let mut deserializer = Deserializer::from_str(str);
-                        let release = Release::deserialize(&mut deserializer).unwrap();
+                        let release = Release::deserialize(&mut deserializer)
+                            .unwrap();
                         process_release(&release, &mut stats);
                         count += 1;
                         if count % 1_000_000 == 0 {
                             println!("checked {} records", count);
                         }
                     }
-                    // unexpected?
                     _ => (),
                 }
             }
-            // There are several other `Event`s that aren't important here
+            // other unimportant Events
             _ => (),
         }
-        // if we don't keep a borrow elsewhere, we can clear the buffer to keep memory usage low
+        // clear buffer to avoid leaking memory
         buf.clear();
     }
 
@@ -74,11 +78,18 @@ fn process_release(release: &Release, stats: &mut HashMap<String, CatCount>) {
     if !release.data_quality.data_quality.is_acceptable() {
         return;
     }
-    let is_main_release = release.master_id.as_ref().and_then(|m| m.is_main_release).unwrap_or_default();
+    let is_main_release = release
+        .master_id
+        .as_ref()
+        .and_then(|m| m.is_main_release)
+        .unwrap_or_default();
     if !is_main_release {
         return;
     }
-    let release_month = release.release_date.as_ref().and_then(|s| valid_release_month(s));
+    let release_month = release
+        .release_date
+        .as_ref()
+        .and_then(|s| valid_release_month(s));
     let Some(release_month) = release_month else {
         return;
     };
@@ -89,7 +100,10 @@ fn process_release(release: &Release, stats: &mut HashMap<String, CatCount>) {
         // if cat == TitleType::LowercaseOnly {
         //     println!("{:?}: {:?}", cat, track.title);
         // }
-        stats.entry(release_month.clone()).or_insert(CatCount::new()).increment(cat)
+        stats
+            .entry(release_month.clone())
+            .or_insert(CatCount::new())
+            .increment(cat)
     }
 }
 

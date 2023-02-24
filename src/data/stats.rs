@@ -5,13 +5,13 @@ pub(crate) struct CatCount {
 }
 
 impl CatCount {
-    fn new() -> CatCount {
+    pub(crate) fn new() -> CatCount {
         CatCount{
             counts: vec![0; 4],
             total: 0,
         }
     }
-    fn increment(&mut self, cat: TitleType) {
+    pub(crate) fn increment(&mut self, cat: TitleType) {
         self.counts[cat as usize]+= 1;
         self.total += 1;
     }
